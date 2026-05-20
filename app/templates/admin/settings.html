@@ -1,0 +1,61 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <span>Empresa</span>
+    <h1>Configurações</h1>
+  </div>
+
+  <a href="{{ url_for('public.company_home', company_slug=company.slug) }}" target="_blank" class="btn-soft">
+    Ver site
+  </a>
+</div>
+
+<section class="panel-card form-card">
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label>Nome do salão</label>
+        <input class="form-control" name="name" value="{{ company.name }}" required>
+      </div>
+
+      <div class="col-md-3">
+        <label>WhatsApp</label>
+        <input class="form-control" name="whatsapp" value="{{ company.whatsapp }}" required>
+      </div>
+
+      <div class="col-md-3">
+        <label>Cor principal</label>
+        <input class="form-control form-control-color" name="primary_color" type="color" value="{{ company.primary_color }}">
+      </div>
+
+      <div class="col-md-6">
+        <label>Instagram</label>
+        <input class="form-control" name="instagram" value="{{ company.instagram or '' }}">
+      </div>
+
+      <div class="col-md-6">
+        <label>Endereço</label>
+        <input class="form-control" name="address" value="{{ company.address or '' }}">
+      </div>
+
+      <div class="col-12">
+        <label>Chamada principal</label>
+        <input class="form-control" name="headline" value="{{ company.headline or '' }}">
+      </div>
+
+      <div class="col-12">
+        <label>Descrição</label>
+        <textarea class="form-control" name="description" rows="4">{{ company.description or '' }}</textarea>
+      </div>
+    </div>
+
+    <button class="btn-primary-custom mt-4" type="submit">
+      Salvar configurações
+    </button>
+  </form>
+</section>
+{% endblock %}

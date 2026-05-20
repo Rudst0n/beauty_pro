@@ -1,0 +1,51 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <span>Galeria</span>
+    <h1>{{ 'Editar foto' if item else 'Nova foto' }}</h1>
+  </div>
+  <a href="{{ url_for('admin.gallery') }}" class="btn-soft">Voltar</a>
+</div>
+
+<section class="panel-card form-card">
+  <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="row g-3">
+      <div class="col-md-8">
+        <label>Título</label>
+        <input class="form-control" name="title" value="{{ item.title if item else '' }}" required>
+      </div>
+
+      <div class="col-md-4">
+        <label>Categoria</label>
+        <input class="form-control" name="category" value="{{ item.category if item else '' }}" placeholder="Antes e depois">
+      </div>
+
+      <div class="col-12">
+        <label>Descrição</label>
+        <textarea class="form-control" name="description" rows="4">{{ item.description if item else '' }}</textarea>
+      </div>
+
+      <div class="col-md-6">
+        <label>Foto</label>
+        <input class="form-control" name="image" type="file" accept=".png,.jpg,.jpeg,.webp">
+        {% if item and item.image %}
+          <small>Imagem atual: {{ item.image }}</small>
+        {% endif %}
+      </div>
+
+      <div class="col-md-6 check-col">
+        <label>
+          <input type="checkbox" name="is_visible" {% if not item or item.is_visible %}checked{% endif %}>
+          Visível no site
+        </label>
+      </div>
+    </div>
+
+    <button class="btn-primary-custom mt-4" type="submit">Salvar foto</button>
+  </form>
+</section>
+{% endblock %}

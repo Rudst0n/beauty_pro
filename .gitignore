@@ -1,0 +1,11 @@
+@"
+.venv/
+__pycache__/
+*.pyc
+.env
+instance/
+app/static/uploads/
+.pytest_cache/
+htmlcov/
+.vscode/
+"@ | Set-Content .gitignore

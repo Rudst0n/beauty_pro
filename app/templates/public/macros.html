@@ -1,0 +1,7 @@
+{% macro image_box(path, alt) %}
+  {% if path %}
+    <img class="card-image" src="{{ url_for('static', filename=path) }}" alt="{{ alt }}">
+  {% else %}
+    <div class="card-image placeholder-image"><span>{{ alt }}</span></div>
+  {% endif %}
+{% endmacro %}
