@@ -105,7 +105,7 @@ Com esses dados, o painel mostra:
 
 ## Próximos upgrades recomendados
 
-1. CSRF nos formulários
+1. CSRF nos formulários FEITO
 2. Recuperação de senha
 3. Controle de estoque
 4. Agendamento com calendário
@@ -115,6 +115,15 @@ Com esses dados, o painel mostra:
 8. Planos e cobrança mensal por empresa
 9. Deploy com PostgreSQL
 10. Painel master da CodeCraft para administrar vários clientes
+
+
+## Melhorias já aplicadas
+
+1. CSRF nos formulários administrativos
+2. Proteção no login e logout
+3. Proteção nas ações de cadastro, edição e exclusão
+4. Upload limitado a imagens
+5. Rotas administrativas protegidas por login
 
 ## Observação importante
 
