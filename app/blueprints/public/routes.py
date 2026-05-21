@@ -16,6 +16,17 @@ def get_company_or_404(company_slug):
     return company
 
 
+
+
+
+def product_can_be_sold(product):
+    if not product.is_available:
+        return False
+    if product.track_stock and (product.stock_quantity or 0) <= 0:
+        return False
+    return True
+
+
 def register_click(company, event_type, action, item=None, item_name=None):
     event = ClickEvent(
         company_id=company.id,
@@ -58,6 +69,8 @@ def company_home(company_slug):
 def track_product(company_slug, slug):
     company = get_company_or_404(company_slug)
     product = Product.query.filter_by(company_id=company.id, slug=slug, is_available=True).first_or_404()
+    if not product_can_be_sold(product):
+        return redirect(url_for("public.company_home", company_slug=company.slug))
     register_click(company, "product", "whatsapp_click", item=product)
     message = quote(f"Olá, tenho interesse no produto {product.name}. Ainda está disponível?")
     return redirect(whatsapp_link(company, message))

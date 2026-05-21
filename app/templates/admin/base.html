@@ -49,7 +49,14 @@
               Produtos
             </a>
 
-            <a href="{{ url_for('admin.services') }}"
+  
+
+          <a href="{{ url_for('admin.stock') }}"
+             class="{% if request.endpoint in ['admin.stock', 'admin.product_stock_adjust'] %}active{% endif %}">
+            Estoque
+          </a>
+
+          <a href="{{ url_for('admin.services') }}"
                class="{% if request.endpoint in ['admin.services', 'admin.service_create', 'admin.service_edit'] %}active{% endif %}">
               Serviços
             </a>

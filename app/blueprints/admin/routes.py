@@ -11,7 +11,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
-from app.models import ClickEvent, Company, GalleryImage, PasswordResetToken, Product, ServiceItem, User
+from app.models import ClickEvent, Company, GalleryImage, PasswordResetToken, Product, ProductStockMovement, ServiceItem, User
 from app.utils import create_slug, save_upload
 
 admin_bp = Blueprint("admin", __name__)
@@ -63,6 +63,62 @@ def ensure_unique_company_slug(base_slug, current_id=None):
 
 def to_bool(field_name):
     return request.form.get(field_name) == "on"
+
+
+
+def parse_int_field(field_name, default=0):
+    value = (request.form.get(field_name) or "").strip()
+    if value == "":
+        return default
+    try:
+        number = int(value)
+        return max(number, 0)
+    except ValueError:
+        return default
+
+
+def product_stock_status(product):
+    if not product.track_stock:
+        return "Sem controle"
+    quantity = product.stock_quantity or 0
+    alert = product.low_stock_alert or 0
+    if quantity <= 0:
+        return "Esgotado"
+    if alert and quantity <= alert:
+        return "Baixo estoque"
+    return "Em estoque"
+
+
+def product_stock_class(product):
+    if not product.track_stock:
+        return "stock-neutral"
+    quantity = product.stock_quantity or 0
+    alert = product.low_stock_alert or 0
+    if quantity <= 0:
+        return "stock-out"
+    if alert and quantity <= alert:
+        return "stock-low"
+    return "stock-ok"
+
+
+def product_stock_summary(company_id):
+    tracked = Product.query.filter_by(company_id=company_id, track_stock=True).count()
+    out_of_stock = Product.query.filter(
+        Product.company_id == company_id,
+        Product.track_stock == True,
+        Product.stock_quantity <= 0,
+    ).count()
+    low_stock = Product.query.filter(
+        Product.company_id == company_id,
+        Product.track_stock == True,
+        Product.stock_quantity > 0,
+        Product.stock_quantity <= Product.low_stock_alert,
+    ).count()
+    return {
+        "tracked": tracked,
+        "out_of_stock": out_of_stock,
+        "low_stock": low_stock,
+    }
 
 
 def normalize_email(value):
@@ -474,8 +530,73 @@ def dashboard():
         return redirect(url_for("admin.master_dashboard"))
     company = get_company()
     data = summary_data(company.id)
+    stock_data = product_stock_summary(company.id)
     recent_events = ClickEvent.query.filter_by(company_id=company.id).order_by(ClickEvent.created_at.desc()).limit(8).all()
-    return render_template("admin/dashboard.html", company=company, data=data, recent_events=recent_events)
+    return render_template("admin/dashboard.html", company=company, data=data, stock_data=stock_data, recent_events=recent_events)
+
+
+
+
+@admin_bp.route("/estoque")
+@login_required
+def stock():
+    if is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
+    company = get_company()
+    items = Product.query.filter_by(company_id=company.id).order_by(Product.name.asc()).all()
+    movements = ProductStockMovement.query.filter_by(company_id=company.id).order_by(ProductStockMovement.created_at.desc()).limit(25).all()
+    summary = product_stock_summary(company.id)
+    return render_template(
+        "admin/products/stock.html",
+        company=company,
+        items=items,
+        movements=movements,
+        summary=summary,
+        product_stock_status=product_stock_status,
+        product_stock_class=product_stock_class,
+    )
+
+
+@admin_bp.route("/estoque/<int:item_id>/ajustar", methods=["POST"])
+@login_required
+def product_stock_adjust(item_id):
+    if is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
+    company = get_company()
+    item = Product.query.filter_by(company_id=company.id, id=item_id).first_or_404()
+
+    movement_type = request.form.get("movement_type") or "ajuste"
+    if movement_type not in {"entrada", "saida", "ajuste"}:
+        abort(400)
+
+    quantity = parse_int_field("quantity", 0)
+    previous_quantity = item.stock_quantity or 0
+
+    if movement_type == "entrada":
+        new_quantity = previous_quantity + quantity
+    elif movement_type == "saida":
+        new_quantity = max(previous_quantity - quantity, 0)
+    else:
+        new_quantity = quantity
+
+    item.track_stock = True
+    item.stock_quantity = new_quantity
+
+    movement = ProductStockMovement(
+        company_id=company.id,
+        product_id=item.id,
+        user_id=current_user.id,
+        movement_type=movement_type,
+        quantity=quantity,
+        previous_quantity=previous_quantity,
+        new_quantity=new_quantity,
+        note=request.form.get("note"),
+    )
+    db.session.add(movement)
+    db.session.commit()
+
+    flash("Estoque atualizado com sucesso.", "success")
+    return redirect(url_for("admin.stock"))
 
 
 @admin_bp.route("/produtos")
@@ -505,6 +626,10 @@ def product_create():
                 description=request.form.get("description"),
                 price=request.form.get("price") or None,
                 image=image,
+                sku=request.form.get("sku"),
+                track_stock=to_bool("track_stock"),
+                stock_quantity=parse_int_field("stock_quantity", 0),
+                low_stock_alert=parse_int_field("low_stock_alert", 3),
                 is_available=to_bool("is_available"),
                 is_featured=to_bool("is_featured"),
             )
@@ -534,6 +659,10 @@ def product_edit(item_id):
             item.slug = ensure_unique_slug(Product, company.id, create_slug(item.name), current_id=item.id)
             item.description = request.form.get("description")
             item.price = request.form.get("price") or None
+            item.sku = request.form.get("sku")
+            item.track_stock = to_bool("track_stock")
+            item.stock_quantity = parse_int_field("stock_quantity", 0)
+            item.low_stock_alert = parse_int_field("low_stock_alert", 3)
             item.is_available = to_bool("is_available")
             item.is_featured = to_bool("is_featured")
             image = save_upload(request.files.get("image"), company.slug, "products")

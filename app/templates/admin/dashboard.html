@@ -11,8 +11,8 @@
 <div class="metric-grid">
   <div class="metric-card"><span>Total de cliques</span><strong>{{ data.total_clicks }}</strong><small>Últimos 30 dias</small></div>
   <div class="metric-card"><span>Cliques em produtos</span><strong>{{ data.product_clicks }}</strong><small>Interesse em compra</small></div>
-  <div class="metric-card"><span>Cliques em serviços</span><strong>{{ data.service_clicks }}</strong><small>Agendamentos</small></div>
-  <div class="metric-card"><span>WhatsApp geral</span><strong>{{ data.whatsapp_clicks }}</strong><small>Contatos diretos</small></div>
+  <div class="metric-card"><span>Estoque baixo</span><strong>{{ stock_data.low_stock if stock_data else 0 }}</strong><small>Produtos precisam de atenção</small></div>
+  <div class="metric-card"><span>Esgotados</span><strong>{{ stock_data.out_of_stock if stock_data else 0 }}</strong><small>Produtos sem unidades</small></div>
 </div>
 
 <div class="content-grid">
@@ -20,6 +20,7 @@
     <h2>Mais procurados</h2>
     <div class="highlight-row"><span>Produto mais clicado</span><strong>{{ data.top_product }}</strong></div>
     <div class="highlight-row"><span>Serviço mais acessado</span><strong>{{ data.top_service }}</strong></div>
+    <div class="highlight-row"><span>Produtos com estoque controlado</span><strong>{{ stock_data.tracked if stock_data else 0 }}</strong></div>
   </section>
 
   <section class="panel-card">

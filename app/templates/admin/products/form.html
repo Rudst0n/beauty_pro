@@ -24,6 +24,21 @@
         <input class="form-control" name="price" type="number" step="0.01" value="{{ item.price if item and item.price else '' }}">
       </div>
 
+      <div class="col-md-4">
+        <label>Código interno ou SKU</label>
+        <input class="form-control" name="sku" value="{{ item.sku if item and item.sku else '' }}" placeholder="Ex: POMADA-01">
+      </div>
+
+      <div class="col-md-4">
+        <label>Quantidade em estoque</label>
+        <input class="form-control" name="stock_quantity" type="number" min="0" step="1" value="{{ item.stock_quantity if item else 0 }}">
+      </div>
+
+      <div class="col-md-4">
+        <label>Alerta de estoque baixo</label>
+        <input class="form-control" name="low_stock_alert" type="number" min="0" step="1" value="{{ item.low_stock_alert if item else 3 }}">
+      </div>
+
       <div class="col-12">
         <label>Descrição</label>
         <textarea class="form-control" name="description" rows="4">{{ item.description if item else '' }}</textarea>
@@ -37,17 +52,24 @@
         {% endif %}
       </div>
 
-      <div class="col-md-3 check-col">
+      <div class="col-md-2 check-col">
         <label>
           <input type="checkbox" name="is_available" {% if not item or item.is_available %}checked{% endif %}>
           Disponível
         </label>
       </div>
 
-      <div class="col-md-3 check-col">
+      <div class="col-md-2 check-col">
         <label>
           <input type="checkbox" name="is_featured" {% if item and item.is_featured %}checked{% endif %}>
           Destaque
+        </label>
+      </div>
+
+      <div class="col-md-2 check-col">
+        <label>
+          <input type="checkbox" name="track_stock" {% if item and item.track_stock %}checked{% endif %}>
+          Controlar estoque
         </label>
       </div>
     </div>

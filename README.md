@@ -272,6 +272,11 @@ beauty_pro/
 
 ## Melhorias já aplicadas
 
+- Controle de estoque por produto
+- Tela administrativa de estoque
+- Histórico de movimentações de estoque
+- Bloqueio de compra pública para produto esgotado
+
 1. CSRF nos formulários administrativos
 2. Proteção no login e logout
 3. Proteção nas ações de cadastro, edição e exclusão
@@ -288,7 +293,6 @@ beauty_pro/
 ## Próximos upgrades recomendados
 
 1. Recuperação de senha
-2. Controle de estoque
 3. Agendamento com calendário
 4. Cadastro de clientes
 5. Cupons e campanhas

@@ -481,3 +481,63 @@ textarea.form-control { min-height: 120px; }
   resize: vertical;
 }
 
+
+
+/* Controle de estoque */
+.header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.stock-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: .82rem;
+  font-weight: 900;
+  border: 1px solid rgba(255, 255, 255, .10);
+}
+
+.stock-ok {
+  color: #bbf7d0;
+  background: rgba(22, 163, 74, .16);
+}
+
+.stock-low {
+  color: #fde68a;
+  background: rgba(245, 158, 11, .18);
+}
+
+.stock-out {
+  color: #fecaca;
+  background: rgba(220, 38, 38, .18);
+}
+
+.stock-neutral {
+  color: #cbd5e1;
+  background: rgba(148, 163, 184, .14);
+}
+
+.stock-adjust-form {
+  display: grid;
+  grid-template-columns: 130px 90px minmax(180px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 540px;
+}
+
+.stock-adjust-form .form-control {
+  min-height: 38px;
+}
+
+@media (max-width: 900px) {
+  .stock-adjust-form {
+    grid-template-columns: 1fr;
+    min-width: 260px;
+  }
+}

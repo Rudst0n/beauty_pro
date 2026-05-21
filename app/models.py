@@ -64,6 +64,10 @@ class Product(db.Model):
     description = db.Column(db.Text, nullable=True)
     price = db.Column(db.Numeric(10, 2), nullable=True)
     image = db.Column(db.String(255), nullable=True)
+    sku = db.Column(db.String(80), nullable=True)
+    track_stock = db.Column(db.Boolean, nullable=False, default=False)
+    stock_quantity = db.Column(db.Integer, nullable=False, default=0)
+    low_stock_alert = db.Column(db.Integer, nullable=False, default=3)
     is_available = db.Column(db.Boolean, nullable=False, default=True)
     is_featured = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
@@ -72,6 +76,24 @@ class Product(db.Model):
     __table_args__ = (
         db.UniqueConstraint("company_id", "slug", name="uq_product_company_slug"),
     )
+
+
+class ProductStockMovement(db.Model):
+    __tablename__ = "product_stock_movements"
+
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=False, index=True)
+    product_id = db.Column(db.Integer, db.ForeignKey("products.id"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True, index=True)
+    movement_type = db.Column(db.String(30), nullable=False, default="ajuste")
+    quantity = db.Column(db.Integer, nullable=False, default=0)
+    previous_quantity = db.Column(db.Integer, nullable=False, default=0)
+    new_quantity = db.Column(db.Integer, nullable=False, default=0)
+    note = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+
+    product = db.relationship("Product", backref=db.backref("stock_movements", lazy=True, cascade="all, delete-orphan"))
+    user = db.relationship("User", backref=db.backref("stock_movements", lazy=True))
 
 
 class ServiceItem(db.Model):

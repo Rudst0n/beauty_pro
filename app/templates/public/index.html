@@ -132,13 +132,27 @@
 
       <div class="card-grid">
         {% for product in products %}
-          <article class="product-card">
+          {% set product_is_available_for_sale = product.is_available and (not product.track_stock or product.stock_quantity > 0) %}
+          <article class="product-card {% if not product_is_available_for_sale %}product-unavailable{% endif %}">
             {{ image_box(product.image, product.name) }}
             <div class="card-body-custom">
               <h3>{{ product.name }}</h3>
               <p>{{ product.description or 'Produto selecionado para cuidado e manutenção.' }}</p>
+              {% if product.track_stock %}
+                {% if product.stock_quantity <= 0 %}
+                  <span class="public-stock-badge stock-out">Esgotado</span>
+                {% elif product.low_stock_alert and product.stock_quantity <= product.low_stock_alert %}
+                  <span class="public-stock-badge stock-low">Últimas unidades</span>
+                {% else %}
+                  <span class="public-stock-badge stock-ok">Disponível</span>
+                {% endif %}
+              {% endif %}
               <div class="price-line">{{ product.price|money }}</div>
-              <a href="{{ url_for('public.track_product', company_slug=company.slug, slug=product.slug) }}" class="card-button">Comprar pelo WhatsApp</a>
+              {% if product_is_available_for_sale %}
+                <a href="{{ url_for('public.track_product', company_slug=company.slug, slug=product.slug) }}" class="card-button">Comprar pelo WhatsApp</a>
+              {% else %}
+                <span class="card-button card-button-disabled">Produto indisponível</span>
+              {% endif %}
             </div>
           </article>
         {% else %}

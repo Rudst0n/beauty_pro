@@ -1,15 +1,14 @@
 {% extends "admin/base.html" %}
-
 {% block content %}
 <div class="page-header">
   <div>
     <span>Catálogo</span>
     <h1>Produtos</h1>
   </div>
-
-  <a href="{{ url_for('admin.product_create') }}" class="btn-primary-custom">
-    Novo produto
-  </a>
+  <div class="header-actions">
+    <a href="{{ url_for('admin.stock') }}" class="btn-soft">Ver estoque</a>
+    <a href="{{ url_for('admin.product_create') }}" class="btn-primary-custom">Novo produto</a>
+  </div>
 </div>
 
 <section class="panel-card">
@@ -19,45 +18,43 @@
         <tr>
           <th>Produto</th>
           <th>Preço</th>
+          <th>Estoque</th>
           <th>Status</th>
           <th>Destaque</th>
           <th></th>
         </tr>
       </thead>
-
       <tbody>
         {% for item in items %}
+          {% set stock_class = product_stock_class(item) if product_stock_class is defined else '' %}
+          {% set stock_status = product_stock_status(item) if product_stock_status is defined else ('Controlado' if item.track_stock else 'Sem controle') %}
           <tr>
             <td>
               <strong>{{ item.name }}</strong><br>
               <small>{{ item.description or '' }}</small>
+              {% if item.sku %}<br><small>SKU: {{ item.sku }}</small>{% endif %}
             </td>
-
             <td>{{ item.price|money }}</td>
-
+            <td>
+              {% if item.track_stock %}
+                <span class="stock-pill {{ stock_class }}">{{ item.stock_quantity }} un.</span><br>
+                <small>{{ stock_status }}</small>
+              {% else %}
+                <span class="stock-pill stock-neutral">Sem controle</span>
+              {% endif %}
+            </td>
             <td>{{ 'Disponível' if item.is_available else 'Indisponível' }}</td>
-
             <td>{{ 'Sim' if item.is_featured else 'Não' }}</td>
-
             <td class="actions-cell">
-              <a href="{{ url_for('admin.product_edit', item_id=item.id) }}" class="btn-soft small">
-                Editar
-              </a>
-
-              <form method="post"
-                    action="{{ url_for('admin.product_delete', item_id=item.id) }}"
-                    onsubmit="return confirm('Deseja excluir este produto?')">
+              <a href="{{ url_for('admin.product_edit', item_id=item.id) }}" class="btn-soft small">Editar</a>
+              <form method="post" action="{{ url_for('admin.product_delete', item_id=item.id) }}" onsubmit="return confirm('Deseja excluir este produto?')">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn-danger-soft small">
-                  Excluir
-                </button>
+                <button type="submit" class="btn-danger-soft small">Excluir</button>
               </form>
             </td>
           </tr>
         {% else %}
-          <tr>
-            <td colspan="5">Nenhum produto cadastrado.</td>
-          </tr>
+          <tr><td colspan="6">Nenhum produto cadastrado.</td></tr>
         {% endfor %}
       </tbody>
     </table>
