@@ -12,6 +12,7 @@ from app.utils import create_slug, save_upload
 admin_bp = Blueprint("admin", __name__)
 
 VALID_COMPANY_STATUS = {"active", "inactive", "blocked"}
+VALID_BUSINESS_TYPES = {"beauty", "barber", "esthetic", "neutral", "premium"}
 
 
 def is_master_user():
@@ -229,7 +230,12 @@ def master_company_create():
                 address=request.form.get("address"),
                 headline=request.form.get("headline") or "Beleza, cuidado e atendimento personalizado",
                 description=request.form.get("description"),
-                primary_color=request.form.get("primary_color") or "#b86b77",
+                primary_color=request.form.get("primary_color") or "#111827",
+                secondary_color=request.form.get("secondary_color") or "#b08d57",
+                business_type=request.form.get("business_type") if request.form.get("business_type") in VALID_BUSINESS_TYPES else "beauty",
+                hero_kicker=request.form.get("hero_kicker"),
+                primary_button_text=request.form.get("primary_button_text"),
+                secondary_button_text=request.form.get("secondary_button_text"),
                 status=request.form.get("status") if request.form.get("status") in VALID_COMPANY_STATUS else "active",
             )
             db.session.add(company)
@@ -282,7 +288,12 @@ def master_company_edit(company_id):
             company.address = request.form.get("address")
             company.headline = request.form.get("headline")
             company.description = request.form.get("description")
-            company.primary_color = request.form.get("primary_color") or "#b86b77"
+            company.primary_color = request.form.get("primary_color") or "#111827"
+            company.secondary_color = request.form.get("secondary_color") or "#b08d57"
+            company.business_type = request.form.get("business_type") if request.form.get("business_type") in VALID_BUSINESS_TYPES else "beauty"
+            company.hero_kicker = request.form.get("hero_kicker")
+            company.primary_button_text = request.form.get("primary_button_text")
+            company.secondary_button_text = request.form.get("secondary_button_text")
             company.status = request.form.get("status") if request.form.get("status") in VALID_COMPANY_STATUS else "active"
             db.session.commit()
 
@@ -601,7 +612,21 @@ def settings():
         company.address = request.form.get("address")
         company.headline = request.form.get("headline")
         company.description = request.form.get("description")
-        company.primary_color = request.form.get("primary_color") or "#b86b77"
+        company.primary_color = request.form.get("primary_color") or "#111827"
+        company.secondary_color = request.form.get("secondary_color") or "#b08d57"
+        company.business_type = request.form.get("business_type") if request.form.get("business_type") in VALID_BUSINESS_TYPES else "beauty"
+        company.hero_kicker = request.form.get("hero_kicker")
+        company.primary_button_text = request.form.get("primary_button_text")
+        company.secondary_button_text = request.form.get("secondary_button_text")
+
+        logo = save_upload(request.files.get("logo"), company.slug, "branding")
+        if logo:
+            company.logo = logo
+
+        hero_image = save_upload(request.files.get("hero_image"), company.slug, "branding")
+        if hero_image:
+            company.hero_image = hero_image
+
         db.session.commit()
         flash("Configurações atualizadas com sucesso.", "success")
         return redirect(url_for("admin.settings"))

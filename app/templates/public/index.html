@@ -2,10 +2,19 @@
 {% from "public/macros.html" import image_box %}
 
 {% block content %}
+{% set business_type = company.business_type or 'beauty' %}
+{% set default_kicker = 'Barbearia, estilo e atendimento direto' if business_type == 'barber' else ('Estética, cuidado e bem-estar' if business_type == 'esthetic' else 'Beleza, cuidado e atendimento direto') %}
+{% set primary_button = company.primary_button_text or 'Agendar pelo WhatsApp' %}
+{% set secondary_button = company.secondary_button_text or 'Ver produtos' %}
+
 <header class="site-header">
   <nav class="container nav-wrap">
     <a class="brand" href="#topo" aria-label="Voltar ao início">
-      <span class="brand-mark">{{ company.name[:1] }}</span>
+      {% if company.logo %}
+        <img class="brand-logo" src="{{ url_for('static', filename=company.logo) }}" alt="{{ company.name }}">
+      {% else %}
+        <span class="brand-mark">{{ company.name[:1] }}</span>
+      {% endif %}
       <span>{{ company.name }}</span>
     </a>
 
@@ -14,7 +23,7 @@
       <a href="#produtos">Produtos</a>
       <a href="#galeria">Galeria</a>
       <a href="#contato">Contato</a>
-      <a href="{{ url_for('public.track_whatsapp', company_slug=company.slug) }}" class="nav-cta">Agendar</a>
+      <a href="{{ url_for('public.track_whatsapp', company_slug=company.slug) }}" class="nav-cta">{{ primary_button }}</a>
     </div>
   </nav>
 </header>
@@ -23,15 +32,15 @@
   <section class="hero-section">
     <div class="container hero-grid">
       <div>
-        <p class="eyebrow">Beleza, cuidado e atendimento direto</p>
-        <h1>{{ company.headline or 'Realce sua beleza com atendimento profissional' }}</h1>
+        <p class="eyebrow">{{ company.hero_kicker or default_kicker }}</p>
+        <h1>{{ company.headline or 'Atendimento profissional com contato direto pelo WhatsApp' }}</h1>
         <p class="hero-text">
           {{ company.description or 'Conheça serviços, produtos selecionados e fale pelo WhatsApp para comprar, agendar ou tirar dúvidas.' }}
         </p>
 
         <div class="hero-actions">
-          <a href="{{ url_for('public.track_whatsapp', company_slug=company.slug) }}" class="btn-main">Agendar pelo WhatsApp</a>
-          <a href="#produtos" class="btn-outline-custom">Ver produtos</a>
+          <a href="{{ url_for('public.track_whatsapp', company_slug=company.slug) }}" class="btn-main">{{ primary_button }}</a>
+          <a href="#produtos" class="btn-outline-custom">{{ secondary_button }}</a>
         </div>
 
         <div class="stats-strip" aria-label="Destaques do atendimento">
@@ -51,10 +60,14 @@
       </div>
 
       <div class="hero-card">
-        <div class="hero-photo-placeholder">
-          <span>{{ company.name }}</span>
-          <small>Catálogo profissional com atendimento pelo WhatsApp</small>
-        </div>
+        {% if company.hero_image %}
+          <img class="hero-photo-real" src="{{ url_for('static', filename=company.hero_image) }}" alt="{{ company.name }}">
+        {% else %}
+          <div class="hero-photo-placeholder">
+            <span>{{ company.name }}</span>
+            <small>Catálogo profissional com atendimento pelo WhatsApp</small>
+          </div>
+        {% endif %}
         <div class="hero-badge">
           <strong>Compra e agendamento sem complicação</strong>
           <small>A cliente escolhe o serviço ou produto e chama direto no WhatsApp.</small>
@@ -75,7 +88,7 @@
       </article>
       <article class="trust-card">
         <strong>Controle pelo painel</strong>
-        <p>O salão pode atualizar produtos, preços, serviços e imagens sempre que precisar.</p>
+        <p>O negócio pode atualizar produtos, preços, serviços e imagens sempre que precisar.</p>
       </article>
     </div>
   </section>
@@ -94,7 +107,7 @@
             {{ image_box(service.image, service.name) }}
             <div class="card-body-custom">
               <h3>{{ service.name }}</h3>
-              <p>{{ service.description or 'Serviço personalizado para cuidar da sua beleza com atenção aos detalhes.' }}</p>
+              <p>{{ service.description or 'Serviço personalizado com atenção aos detalhes.' }}</p>
               <div class="meta-row">
                 <span>{% if service.price_from %}A partir de {{ service.price_from|money }}{% else %}Sob consulta{% endif %}</span>
                 {% if service.duration %}<small>{{ service.duration }}</small>{% endif %}
@@ -114,7 +127,7 @@
       <div class="section-title">
         <p>Catálogo</p>
         <h2>Produtos disponíveis</h2>
-        <div class="lead">Produtos selecionados para cuidados com cabelo, beleza e rotina de manutenção em casa.</div>
+        <div class="lead">Produtos selecionados para cuidados, manutenção e rotina do cliente.</div>
       </div>
 
       <div class="card-grid">
@@ -123,7 +136,7 @@
             {{ image_box(product.image, product.name) }}
             <div class="card-body-custom">
               <h3>{{ product.name }}</h3>
-              <p>{{ product.description or 'Produto selecionado para cuidado capilar.' }}</p>
+              <p>{{ product.description or 'Produto selecionado para cuidado e manutenção.' }}</p>
               <div class="price-line">{{ product.price|money }}</div>
               <a href="{{ url_for('public.track_product', company_slug=company.slug, slug=product.slug) }}" class="card-button">Comprar pelo WhatsApp</a>
             </div>
@@ -141,12 +154,12 @@
         <div>
           <p class="mini-kicker">Como funciona</p>
           <h2>Escolha, clique e fale direto no WhatsApp</h2>
-          <p>O processo é simples para a cliente e fácil de gerenciar pelo salão. Tudo foi pensado para reduzir dúvidas e aumentar contatos qualificados.</p>
+          <p>O processo é simples para o cliente e fácil de gerenciar pelo painel. Tudo foi pensado para reduzir dúvidas e aumentar contatos qualificados.</p>
         </div>
         <div class="steps-list">
           <div class="step-item">
             <span class="step-number">1</span>
-            <div><strong>A cliente vê o catálogo</strong><span>Produtos, serviços e fotos ficam organizados na página.</span></div>
+            <div><strong>O cliente vê o catálogo</strong><span>Produtos, serviços e fotos ficam organizados na página.</span></div>
           </div>
           <div class="step-item">
             <span class="step-number">2</span>
@@ -154,7 +167,7 @@
           </div>
           <div class="step-item">
             <span class="step-number">3</span>
-            <div><strong>O salão atende e finaliza</strong><span>A compra ou agendamento continua direto pelo WhatsApp.</span></div>
+            <div><strong>O atendimento finaliza</strong><span>A compra ou agendamento continua direto pelo WhatsApp.</span></div>
           </div>
         </div>
       </div>

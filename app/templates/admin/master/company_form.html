@@ -21,7 +21,7 @@
 
       <div class="col-md-3">
         <label>Slug do site</label>
-        <input class="form-control" name="slug" value="{{ company.slug if company else '' }}" placeholder="ex: studio-bella-hair">
+        <input class="form-control" name="slug" value="{{ company.slug if company else '' }}" placeholder="ex: barbearia-centro">
       </div>
 
       <div class="col-md-3">
@@ -45,16 +45,38 @@
       </div>
 
       <div class="col-md-4">
-        <label>Cor principal</label>
-        <input class="form-control form-control-color" name="primary_color" type="color" value="{{ company.primary_color if company else '#b86b77' }}">
+        <label>Tipo de negócio</label>
+        {% set business_type = company.business_type if company else 'beauty' %}
+        <select class="form-control" name="business_type">
+          <option value="beauty" {% if business_type == 'beauty' %}selected{% endif %}>Salão de beleza</option>
+          <option value="barber" {% if business_type == 'barber' %}selected{% endif %}>Barbearia</option>
+          <option value="esthetic" {% if business_type == 'esthetic' %}selected{% endif %}>Estética</option>
+          <option value="neutral" {% if business_type == 'neutral' %}selected{% endif %}>Neutro profissional</option>
+          <option value="premium" {% if business_type == 'premium' %}selected{% endif %}>Premium</option>
+        </select>
       </div>
 
-      <div class="col-12">
+      <div class="col-md-3">
+        <label>Cor principal</label>
+        <input class="form-control form-control-color" name="primary_color" type="color" value="{{ company.primary_color if company else '#111827' }}">
+      </div>
+
+      <div class="col-md-3">
+        <label>Cor secundária</label>
+        <input class="form-control form-control-color" name="secondary_color" type="color" value="{{ company.secondary_color if company else '#b08d57' }}">
+      </div>
+
+      <div class="col-md-6">
         <label>Endereço</label>
         <input class="form-control" name="address" value="{{ company.address if company else '' }}">
       </div>
 
-      <div class="col-12">
+      <div class="col-md-6">
+        <label>Texto pequeno acima do título</label>
+        <input class="form-control" name="hero_kicker" value="{{ company.hero_kicker if company else '' }}" placeholder="Ex: Barbearia, estilo e atendimento direto">
+      </div>
+
+      <div class="col-md-6">
         <label>Chamada principal</label>
         <input class="form-control" name="headline" value="{{ company.headline if company else '' }}">
       </div>
@@ -62,6 +84,16 @@
       <div class="col-12">
         <label>Descrição</label>
         <textarea class="form-control" name="description" rows="4">{{ company.description if company else '' }}</textarea>
+      </div>
+
+      <div class="col-md-6">
+        <label>Texto do botão principal</label>
+        <input class="form-control" name="primary_button_text" value="{{ company.primary_button_text if company else '' }}" placeholder="Ex: Agendar pelo WhatsApp">
+      </div>
+
+      <div class="col-md-6">
+        <label>Texto do botão secundário</label>
+        <input class="form-control" name="secondary_button_text" value="{{ company.secondary_button_text if company else '' }}" placeholder="Ex: Ver produtos">
       </div>
     </div>
 

@@ -13,12 +13,14 @@
 </div>
 
 <section class="panel-card form-card">
-  <form method="post">
+  <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <h2 class="form-section-title">Dados principais</h2>
 
     <div class="row g-3">
       <div class="col-md-6">
-        <label>Nome do salão</label>
+        <label>Nome da empresa</label>
         <input class="form-control" name="name" value="{{ company.name }}" required>
       </div>
 
@@ -28,8 +30,15 @@
       </div>
 
       <div class="col-md-3">
-        <label>Cor principal</label>
-        <input class="form-control form-control-color" name="primary_color" type="color" value="{{ company.primary_color }}">
+        <label>Tipo de negócio</label>
+        {% set business_type = company.business_type or 'beauty' %}
+        <select class="form-control" name="business_type">
+          <option value="beauty" {% if business_type == 'beauty' %}selected{% endif %}>Salão de beleza</option>
+          <option value="barber" {% if business_type == 'barber' %}selected{% endif %}>Barbearia</option>
+          <option value="esthetic" {% if business_type == 'esthetic' %}selected{% endif %}>Estética</option>
+          <option value="neutral" {% if business_type == 'neutral' %}selected{% endif %}>Neutro profissional</option>
+          <option value="premium" {% if business_type == 'premium' %}selected{% endif %}>Premium</option>
+        </select>
       </div>
 
       <div class="col-md-6">
@@ -41,8 +50,49 @@
         <label>Endereço</label>
         <input class="form-control" name="address" value="{{ company.address or '' }}">
       </div>
+    </div>
 
-      <div class="col-12">
+    <hr class="soft-divider">
+    <h2 class="form-section-title">Identidade visual</h2>
+
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label>Cor principal</label>
+        <input class="form-control form-control-color" name="primary_color" type="color" value="{{ company.primary_color or '#111827' }}">
+      </div>
+
+      <div class="col-md-3">
+        <label>Cor secundária</label>
+        <input class="form-control form-control-color" name="secondary_color" type="color" value="{{ company.secondary_color or '#b08d57' }}">
+      </div>
+
+      <div class="col-md-3">
+        <label>Logo</label>
+        <input class="form-control" name="logo" type="file" accept=".png,.jpg,.jpeg,.webp">
+        {% if company.logo %}
+          <small>Logo atual: {{ company.logo }}</small>
+        {% endif %}
+      </div>
+
+      <div class="col-md-3">
+        <label>Imagem principal</label>
+        <input class="form-control" name="hero_image" type="file" accept=".png,.jpg,.jpeg,.webp">
+        {% if company.hero_image %}
+          <small>Imagem atual: {{ company.hero_image }}</small>
+        {% endif %}
+      </div>
+    </div>
+
+    <hr class="soft-divider">
+    <h2 class="form-section-title">Textos da página</h2>
+
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label>Texto pequeno acima do título</label>
+        <input class="form-control" name="hero_kicker" value="{{ company.hero_kicker or '' }}" placeholder="Ex: Barbearia, estilo e atendimento direto">
+      </div>
+
+      <div class="col-md-6">
         <label>Chamada principal</label>
         <input class="form-control" name="headline" value="{{ company.headline or '' }}">
       </div>
@@ -50,6 +100,16 @@
       <div class="col-12">
         <label>Descrição</label>
         <textarea class="form-control" name="description" rows="4">{{ company.description or '' }}</textarea>
+      </div>
+
+      <div class="col-md-6">
+        <label>Texto do botão principal</label>
+        <input class="form-control" name="primary_button_text" value="{{ company.primary_button_text or '' }}" placeholder="Ex: Agendar pelo WhatsApp">
+      </div>
+
+      <div class="col-md-6">
+        <label>Texto do botão secundário</label>
+        <input class="form-control" name="secondary_button_text" value="{{ company.secondary_button_text or '' }}" placeholder="Ex: Ver produtos">
       </div>
     </div>
 
