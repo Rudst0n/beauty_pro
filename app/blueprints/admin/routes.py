@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
@@ -10,6 +10,17 @@ from app.models import ClickEvent, Company, GalleryImage, Product, ServiceItem, 
 from app.utils import create_slug, save_upload
 
 admin_bp = Blueprint("admin", __name__)
+
+VALID_COMPANY_STATUS = {"active", "inactive", "blocked"}
+
+
+def is_master_user():
+    return current_user.is_authenticated and current_user.role == "super_admin"
+
+
+def require_master_user():
+    if not is_master_user():
+        abort(403)
 
 
 def get_company():
@@ -30,8 +41,26 @@ def ensure_unique_slug(model, company_id, base_slug, current_id=None):
         count += 1
 
 
+def ensure_unique_company_slug(base_slug, current_id=None):
+    slug = base_slug
+    count = 2
+    while True:
+        query = Company.query.filter_by(slug=slug)
+        if current_id:
+            query = query.filter(Company.id != current_id)
+        exists = query.first()
+        if not exists:
+            return slug
+        slug = f"{base_slug}-{count}"
+        count += 1
+
+
 def to_bool(field_name):
     return request.form.get(field_name) == "on"
+
+
+def normalize_email(value):
+    return (value or "").strip().lower()
 
 
 def summary_data(company_id, days=30):
@@ -83,18 +112,50 @@ def daily_clicks(company_id, days=30):
     return [{"date": row[0], "total": row[1]} for row in rows]
 
 
+def master_summary(days=30):
+    since = datetime.utcnow() - timedelta(days=days)
+    return {
+        "companies": Company.query.count(),
+        "active_companies": Company.query.filter_by(status="active").count(),
+        "inactive_companies": Company.query.filter(Company.status != "active").count(),
+        "users": User.query.count(),
+        "products": Product.query.count(),
+        "services": ServiceItem.query.count(),
+        "clicks": ClickEvent.query.filter(ClickEvent.created_at >= since).count(),
+    }
+
+
+def company_usage_rows():
+    companies = Company.query.order_by(Company.created_at.desc()).all()
+    rows = []
+    for company in companies:
+        rows.append({
+            "company": company,
+            "users": User.query.filter_by(company_id=company.id).count(),
+            "products": Product.query.filter_by(company_id=company.id).count(),
+            "services": ServiceItem.query.filter_by(company_id=company.id).count(),
+            "gallery": GalleryImage.query.filter_by(company_id=company.id).count(),
+            "clicks": ClickEvent.query.filter_by(company_id=company.id).count(),
+        })
+    return rows
+
+
 @admin_bp.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
+        if is_master_user():
+            return redirect(url_for("admin.master_dashboard"))
         return redirect(url_for("admin.dashboard"))
 
     if request.method == "POST":
-        email = (request.form.get("email") or "").strip().lower()
+        email = normalize_email(request.form.get("email"))
         password = request.form.get("password") or ""
         user = User.query.filter_by(email=email).first()
 
         if user and user.is_active and user.check_password(password):
             login_user(user)
+            if user.role == "super_admin":
+                return redirect(url_for("admin.master_dashboard"))
             return redirect(url_for("admin.dashboard"))
 
         flash("E-mail ou senha inválidos.", "danger")
@@ -111,12 +172,154 @@ def logout():
 
 @admin_bp.route("/")
 def admin_home():
+    if current_user.is_authenticated and is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
     return redirect(url_for("admin.dashboard"))
+
+
+@admin_bp.route("/master")
+@login_required
+def master_dashboard():
+    require_master_user()
+    data = master_summary()
+    companies = company_usage_rows()[:8]
+    recent_events = ClickEvent.query.order_by(ClickEvent.created_at.desc()).limit(12).all()
+    return render_template("admin/master/dashboard.html", data=data, companies=companies, recent_events=recent_events)
+
+
+@admin_bp.route("/master/empresas")
+@login_required
+def master_companies():
+    require_master_user()
+    rows = company_usage_rows()
+    return render_template("admin/master/companies.html", rows=rows)
+
+
+@admin_bp.route("/master/empresas/nova", methods=["GET", "POST"])
+@login_required
+def master_company_create():
+    require_master_user()
+
+    if request.method == "POST":
+        try:
+            name = (request.form.get("name") or "").strip()
+            whatsapp = (request.form.get("whatsapp") or "").strip()
+            admin_email = normalize_email(request.form.get("admin_email"))
+            admin_password = request.form.get("admin_password") or ""
+            admin_name = (request.form.get("admin_name") or "Administrador").strip()
+
+            if not name:
+                flash("Informe o nome da empresa.", "danger")
+                return render_template("admin/master/company_form.html", company=None)
+
+            if not whatsapp:
+                flash("Informe o WhatsApp da empresa.", "danger")
+                return render_template("admin/master/company_form.html", company=None)
+
+            if admin_email and User.query.filter_by(email=admin_email).first():
+                flash("Já existe um usuário com este e-mail.", "danger")
+                return render_template("admin/master/company_form.html", company=None)
+
+            base_slug = create_slug(request.form.get("slug") or name)
+            company = Company(
+                name=name,
+                slug=ensure_unique_company_slug(base_slug),
+                whatsapp=whatsapp,
+                instagram=request.form.get("instagram"),
+                address=request.form.get("address"),
+                headline=request.form.get("headline") or "Beleza, cuidado e atendimento personalizado",
+                description=request.form.get("description"),
+                primary_color=request.form.get("primary_color") or "#b86b77",
+                status=request.form.get("status") if request.form.get("status") in VALID_COMPANY_STATUS else "active",
+            )
+            db.session.add(company)
+            db.session.commit()
+
+            if admin_email and admin_password:
+                user = User(
+                    company_id=company.id,
+                    name=admin_name,
+                    email=admin_email,
+                    role="admin",
+                    is_active=True,
+                )
+                user.set_password(admin_password)
+                db.session.add(user)
+                db.session.commit()
+
+            flash("Empresa cadastrada com sucesso.", "success")
+            return redirect(url_for("admin.master_companies"))
+        except IntegrityError:
+            db.session.rollback()
+            flash("Não foi possível cadastrar. Verifique se o slug ou e-mail já existem.", "danger")
+
+    return render_template("admin/master/company_form.html", company=None)
+
+
+@admin_bp.route("/master/empresas/<int:company_id>/editar", methods=["GET", "POST"])
+@login_required
+def master_company_edit(company_id):
+    require_master_user()
+    company = Company.query.get_or_404(company_id)
+
+    if request.method == "POST":
+        try:
+            name = (request.form.get("name") or "").strip()
+            whatsapp = (request.form.get("whatsapp") or "").strip()
+
+            if not name:
+                flash("Informe o nome da empresa.", "danger")
+                return render_template("admin/master/company_form.html", company=company)
+
+            if not whatsapp:
+                flash("Informe o WhatsApp da empresa.", "danger")
+                return render_template("admin/master/company_form.html", company=company)
+
+            company.name = name
+            company.slug = ensure_unique_company_slug(create_slug(request.form.get("slug") or name), current_id=company.id)
+            company.whatsapp = whatsapp
+            company.instagram = request.form.get("instagram")
+            company.address = request.form.get("address")
+            company.headline = request.form.get("headline")
+            company.description = request.form.get("description")
+            company.primary_color = request.form.get("primary_color") or "#b86b77"
+            company.status = request.form.get("status") if request.form.get("status") in VALID_COMPANY_STATUS else "active"
+            db.session.commit()
+
+            flash("Empresa atualizada com sucesso.", "success")
+            return redirect(url_for("admin.master_companies"))
+        except IntegrityError:
+            db.session.rollback()
+            flash("Não foi possível atualizar. Verifique se o slug já existe.", "danger")
+
+    return render_template("admin/master/company_form.html", company=company)
+
+
+@admin_bp.route("/master/empresas/<int:company_id>/status/<status>", methods=["POST"])
+@login_required
+def master_company_status(company_id, status):
+    require_master_user()
+    if status not in VALID_COMPANY_STATUS:
+        abort(400)
+
+    company = Company.query.get_or_404(company_id)
+    company.status = status
+    db.session.commit()
+
+    labels = {
+        "active": "ativada",
+        "inactive": "inativada",
+        "blocked": "bloqueada",
+    }
+    flash(f"Empresa {labels.get(status, 'atualizada')} com sucesso.", "success")
+    return redirect(url_for("admin.master_companies"))
 
 
 @admin_bp.route("/dashboard")
 @login_required
 def dashboard():
+    if is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
     company = get_company()
     data = summary_data(company.id)
     recent_events = ClickEvent.query.filter_by(company_id=company.id).order_by(ClickEvent.created_at.desc()).limit(8).all()
@@ -126,6 +329,8 @@ def dashboard():
 @admin_bp.route("/produtos")
 @login_required
 def products():
+    if is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
     company = get_company()
     items = Product.query.filter_by(company_id=company.id).order_by(Product.created_at.desc()).all()
     return render_template("admin/products/list.html", company=company, items=items)
@@ -134,6 +339,8 @@ def products():
 @admin_bp.route("/produtos/novo", methods=["GET", "POST"])
 @login_required
 def product_create():
+    if is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
     company = get_company()
     if request.method == "POST":
         try:
@@ -165,6 +372,8 @@ def product_create():
 @admin_bp.route("/produtos/<int:item_id>/editar", methods=["GET", "POST"])
 @login_required
 def product_edit(item_id):
+    if is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
     company = get_company()
     item = Product.query.filter_by(company_id=company.id, id=item_id).first_or_404()
     if request.method == "POST":
@@ -190,6 +399,8 @@ def product_edit(item_id):
 @admin_bp.route("/produtos/<int:item_id>/excluir", methods=["POST"])
 @login_required
 def product_delete(item_id):
+    if is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
     company = get_company()
     item = Product.query.filter_by(company_id=company.id, id=item_id).first_or_404()
     db.session.delete(item)
@@ -201,6 +412,8 @@ def product_delete(item_id):
 @admin_bp.route("/servicos")
 @login_required
 def services():
+    if is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
     company = get_company()
     items = ServiceItem.query.filter_by(company_id=company.id).order_by(ServiceItem.created_at.desc()).all()
     return render_template("admin/services/list.html", company=company, items=items)
@@ -209,6 +422,8 @@ def services():
 @admin_bp.route("/servicos/novo", methods=["GET", "POST"])
 @login_required
 def service_create():
+    if is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
     company = get_company()
     if request.method == "POST":
         try:
@@ -238,6 +453,8 @@ def service_create():
 @admin_bp.route("/servicos/<int:item_id>/editar", methods=["GET", "POST"])
 @login_required
 def service_edit(item_id):
+    if is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
     company = get_company()
     item = ServiceItem.query.filter_by(company_id=company.id, id=item_id).first_or_404()
     if request.method == "POST":
@@ -264,6 +481,8 @@ def service_edit(item_id):
 @admin_bp.route("/servicos/<int:item_id>/excluir", methods=["POST"])
 @login_required
 def service_delete(item_id):
+    if is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
     company = get_company()
     item = ServiceItem.query.filter_by(company_id=company.id, id=item_id).first_or_404()
     db.session.delete(item)
@@ -275,6 +494,8 @@ def service_delete(item_id):
 @admin_bp.route("/galeria")
 @login_required
 def gallery():
+    if is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
     company = get_company()
     items = GalleryImage.query.filter_by(company_id=company.id).order_by(GalleryImage.created_at.desc()).all()
     return render_template("admin/gallery/list.html", company=company, items=items)
@@ -283,6 +504,8 @@ def gallery():
 @admin_bp.route("/galeria/nova", methods=["GET", "POST"])
 @login_required
 def gallery_create():
+    if is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
     company = get_company()
     if request.method == "POST":
         try:
@@ -308,6 +531,8 @@ def gallery_create():
 @admin_bp.route("/galeria/<int:item_id>/editar", methods=["GET", "POST"])
 @login_required
 def gallery_edit(item_id):
+    if is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
     company = get_company()
     item = GalleryImage.query.filter_by(company_id=company.id, id=item_id).first_or_404()
     if request.method == "POST":
@@ -331,6 +556,8 @@ def gallery_edit(item_id):
 @admin_bp.route("/galeria/<int:item_id>/excluir", methods=["POST"])
 @login_required
 def gallery_delete(item_id):
+    if is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
     company = get_company()
     item = GalleryImage.query.filter_by(company_id=company.id, id=item_id).first_or_404()
     db.session.delete(item)
@@ -342,6 +569,8 @@ def gallery_delete(item_id):
 @admin_bp.route("/relatorios")
 @login_required
 def reports():
+    if is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
     company = get_company()
     data = summary_data(company.id)
     product_ranking = ranking(company.id, "product")
@@ -362,6 +591,8 @@ def reports():
 @admin_bp.route("/configuracoes", methods=["GET", "POST"])
 @login_required
 def settings():
+    if is_master_user():
+        return redirect(url_for("admin.master_dashboard"))
     company = get_company()
     if request.method == "POST":
         company.name = request.form.get("name")

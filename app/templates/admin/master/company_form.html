@@ -1,0 +1,99 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <span>CodeCraft</span>
+    <h1>{{ 'Editar empresa' if company else 'Nova empresa' }}</h1>
+  </div>
+  <a href="{{ url_for('admin.master_companies') }}" class="btn-soft">Voltar</a>
+</div>
+
+<section class="panel-card form-card">
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label>Nome da empresa</label>
+        <input class="form-control" name="name" value="{{ company.name if company else '' }}" required>
+      </div>
+
+      <div class="col-md-3">
+        <label>Slug do site</label>
+        <input class="form-control" name="slug" value="{{ company.slug if company else '' }}" placeholder="ex: studio-bella-hair">
+      </div>
+
+      <div class="col-md-3">
+        <label>Status</label>
+        <select class="form-control" name="status">
+          {% set selected_status = company.status if company else 'active' %}
+          <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Ativa</option>
+          <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inativa</option>
+          <option value="blocked" {% if selected_status == 'blocked' %}selected{% endif %}>Bloqueada</option>
+        </select>
+      </div>
+
+      <div class="col-md-4">
+        <label>WhatsApp</label>
+        <input class="form-control" name="whatsapp" value="{{ company.whatsapp if company else '' }}" required>
+      </div>
+
+      <div class="col-md-4">
+        <label>Instagram</label>
+        <input class="form-control" name="instagram" value="{{ company.instagram if company else '' }}">
+      </div>
+
+      <div class="col-md-4">
+        <label>Cor principal</label>
+        <input class="form-control form-control-color" name="primary_color" type="color" value="{{ company.primary_color if company else '#b86b77' }}">
+      </div>
+
+      <div class="col-12">
+        <label>Endereço</label>
+        <input class="form-control" name="address" value="{{ company.address if company else '' }}">
+      </div>
+
+      <div class="col-12">
+        <label>Chamada principal</label>
+        <input class="form-control" name="headline" value="{{ company.headline if company else '' }}">
+      </div>
+
+      <div class="col-12">
+        <label>Descrição</label>
+        <textarea class="form-control" name="description" rows="4">{{ company.description if company else '' }}</textarea>
+      </div>
+    </div>
+
+    {% if not company %}
+      <hr class="soft-divider">
+      <h2 class="form-section-title">Usuário administrador da empresa</h2>
+
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label>Nome do responsável</label>
+          <input class="form-control" name="admin_name" placeholder="Ex: Ana Souza">
+        </div>
+
+        <div class="col-md-4">
+          <label>E-mail de acesso</label>
+          <input class="form-control" name="admin_email" type="email" placeholder="cliente@email.com">
+        </div>
+
+        <div class="col-md-4">
+          <label>Senha inicial</label>
+          <input class="form-control" name="admin_password" type="text" placeholder="Senha provisória">
+        </div>
+      </div>
+
+      <small class="helper-text">
+        Se preencher e-mail e senha, o sistema já cria o acesso da cliente ao painel dela.
+      </small>
+    {% endif %}
+
+    <button class="btn-primary-custom mt-4" type="submit">
+      Salvar empresa
+    </button>
+  </form>
+</section>
+{% endblock %}

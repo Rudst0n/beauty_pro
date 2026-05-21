@@ -64,7 +64,10 @@ a { text-decoration: none; }
 }
 .highlight-row span { color: #9ba1b3; }
 .highlight-row strong { text-align: right; }
-
+.table-dark-custom { color: #dfe3ee; margin-bottom: 0; }
+.table-dark-custom th { color: #9ba1b3; font-size: .82rem; text-transform: uppercase; letter-spacing: .08em; }
+.table-dark-custom td, .table-dark-custom th { background: transparent; border-color: rgba(255,255,255,.08); }
+.table-dark-custom small { color: #9ba1b3; }
 .btn-primary-custom, .btn-soft, .btn-danger-soft, .btn-login {
   display: inline-flex;
   align-items: center;
@@ -75,52 +78,6 @@ a { text-decoration: none; }
   font-weight: 800;
   border: 0;
 }
-
-.table-dark-custom {
-  --bs-table-color: #dfe3ee;
-  --bs-table-bg: transparent;
-  --bs-table-border-color: rgba(255,255,255,.08);
-  --bs-table-striped-color: #dfe3ee;
-  --bs-table-striped-bg: rgba(255,255,255,.03);
-  --bs-table-hover-color: #ffffff;
-  --bs-table-hover-bg: rgba(255,255,255,.05);
-
-  color: #dfe3ee !important;
-  margin-bottom: 0;
-}
-
-.table-dark-custom th {
-  color: #aeb4c5 !important;
-  font-size: .82rem;
-  text-transform: uppercase;
-  letter-spacing: .12em;
-  font-weight: 900;
-}
-
-.table-dark-custom td,
-.table-dark-custom th {
-  background-color: transparent !important;
-  border-color: rgba(255,255,255,.08) !important;
-  vertical-align: middle;
-}
-
-.table-dark-custom td {
-  color: #dfe3ee !important;
-}
-
-.table-dark-custom td strong {
-  color: #ffffff !important;
-  font-weight: 900;
-}
-
-.table-dark-custom small {
-  color: #aeb4c5 !important;
-}
-
-.table-dark-custom tbody tr:hover {
-  background: rgba(255,255,255,.03);
-}
-
 .btn-primary-custom, .btn-login { background: #d17d8b; color: #171016; }
 .btn-soft { background: rgba(255,255,255,.08); color: #fff; }
 .btn-danger-soft { background: rgba(240, 86, 86, .16); color: #ff8b8b; }
@@ -158,4 +115,93 @@ textarea.form-control { min-height: 120px; }
   .metric-grid, .content-grid { grid-template-columns: 1fr; }
   .sidebar nav { grid-template-columns: 1fr; }
   .actions-cell { justify-content: flex-start; }
+}
+
+
+.table-dark-custom {
+  --bs-table-color: #dfe3ee;
+  --bs-table-bg: transparent;
+  --bs-table-border-color: rgba(255,255,255,.08);
+  --bs-table-striped-color: #dfe3ee;
+  --bs-table-striped-bg: rgba(255,255,255,.03);
+  --bs-table-hover-color: #ffffff;
+  --bs-table-hover-bg: rgba(255,255,255,.05);
+  color: #dfe3ee !important;
+  margin-bottom: 0;
+}
+.table-dark-custom th {
+  color: #aeb4c5 !important;
+  font-size: .82rem;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  font-weight: 900;
+}
+.table-dark-custom td,
+.table-dark-custom th {
+  background-color: transparent !important;
+  border-color: rgba(255,255,255,.08) !important;
+  vertical-align: middle;
+}
+.table-dark-custom td { color: #dfe3ee !important; }
+.table-dark-custom td strong { color: #ffffff !important; font-weight: 900; }
+.table-dark-custom small { color: #aeb4c5 !important; }
+.table-dark-custom tbody tr:hover { background: rgba(255,255,255,.03); }
+
+.sidebar nav a.active,
+.sidebar-nav a.active {
+  background: rgba(209,125,139,.18);
+  color: #ffffff;
+  border-color: rgba(209,125,139,.35);
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.section-head span {
+  color: #9ba1b3;
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: .78rem;
+  letter-spacing: .12em;
+}
+.section-head h2 { margin: 0; }
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: .78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.status-active { background: rgba(64, 196, 120, .14); color: #78e5a5; }
+.status-inactive { background: rgba(255, 184, 77, .14); color: #ffd28a; }
+.status-blocked { background: rgba(240, 86, 86, .16); color: #ff8b8b; }
+.master-actions { flex-wrap: wrap; min-width: 360px; }
+.soft-divider {
+  border: 0;
+  border-top: 1px solid rgba(255,255,255,.08);
+  margin: 28px 0;
+}
+.form-section-title {
+  font-size: 1.15rem;
+  font-weight: 900;
+  margin-bottom: 14px;
+}
+.helper-text {
+  display: block;
+  margin-top: 12px;
+  color: #aeb4c5;
+}
+@media (max-width: 680px) {
+  .section-head { flex-direction: column; align-items: flex-start; }
+  .master-actions { min-width: 0; }
 }
