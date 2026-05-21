@@ -1,4 +1,9 @@
 from datetime import datetime, timedelta
+import os
+import secrets
+from email.message import EmailMessage
+from hashlib import sha256
+import smtplib
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
@@ -6,7 +11,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
-from app.models import ClickEvent, Company, GalleryImage, Product, ServiceItem, User
+from app.models import ClickEvent, Company, GalleryImage, PasswordResetToken, Product, ServiceItem, User
 from app.utils import create_slug, save_upload
 
 admin_bp = Blueprint("admin", __name__)
@@ -62,6 +67,61 @@ def to_bool(field_name):
 
 def normalize_email(value):
     return (value or "").strip().lower()
+
+
+
+def hash_reset_token(token):
+    return sha256(token.encode("utf-8")).hexdigest()
+
+
+def password_is_strong(password):
+    if len(password) < 8:
+        return False
+    has_letter = any(char.isalpha() for char in password)
+    has_number = any(char.isdigit() for char in password)
+    return has_letter and has_number
+
+
+def send_password_reset_email(user, reset_link):
+    mail_server = os.getenv("MAIL_SERVER")
+    mail_port = int(os.getenv("MAIL_PORT", "587"))
+    mail_username = os.getenv("MAIL_USERNAME")
+    mail_password = os.getenv("MAIL_PASSWORD")
+    mail_sender = os.getenv("MAIL_DEFAULT_SENDER") or mail_username
+    use_ssl = os.getenv("MAIL_USE_SSL", "false").strip().lower() in {"1", "true", "yes", "on"}
+    use_tls = os.getenv("MAIL_USE_TLS", "true").strip().lower() in {"1", "true", "yes", "on"}
+
+    if not mail_server or not mail_sender:
+        return False
+
+    message = EmailMessage()
+    message["Subject"] = "Recuperação de senha - Beauty Pro"
+    message["From"] = mail_sender
+    message["To"] = user.email
+    message.set_content(
+        "Olá, " + user.name + ".\n\n"
+        "Recebemos uma solicitação para redefinir sua senha no Beauty Pro.\n\n"
+        "Acesse o link abaixo para criar uma nova senha. O link expira em 1 hora.\n\n"
+        + reset_link + "\n\n"
+        "Se você não solicitou esta alteração, ignore esta mensagem."
+    )
+
+    try:
+        if use_ssl:
+            server = smtplib.SMTP_SSL(mail_server, mail_port, timeout=15)
+        else:
+            server = smtplib.SMTP(mail_server, mail_port, timeout=15)
+
+        with server:
+            if use_tls and not use_ssl:
+                server.starttls()
+            if mail_username and mail_password:
+                server.login(mail_username, mail_password)
+            server.send_message(message)
+        return True
+    except Exception as error:
+        print(f"Erro ao enviar e-mail de recuperação: {error}")
+        return False
 
 
 def summary_data(company_id, days=30):
@@ -162,6 +222,87 @@ def login():
         flash("E-mail ou senha inválidos.", "danger")
 
     return render_template("admin/login.html")
+
+
+
+
+@admin_bp.route("/recuperar-senha", methods=["GET", "POST"])
+def forgot_password():
+    if current_user.is_authenticated:
+        if is_master_user():
+            return redirect(url_for("admin.master_dashboard"))
+        return redirect(url_for("admin.dashboard"))
+
+    reset_link = None
+
+    if request.method == "POST":
+        email = normalize_email(request.form.get("email"))
+        user = User.query.filter_by(email=email).first()
+
+        if user and user.is_active:
+            token = secrets.token_urlsafe(48)
+            token_hash = hash_reset_token(token)
+
+            PasswordResetToken.query.filter_by(user_id=user.id, used_at=None).update({
+                "used_at": datetime.utcnow()
+            })
+
+            reset_token = PasswordResetToken(
+                user_id=user.id,
+                token_hash=token_hash,
+                expires_at=datetime.utcnow() + timedelta(hours=1),
+            )
+            db.session.add(reset_token)
+            db.session.commit()
+
+            reset_link = url_for("admin.reset_password", token=token, _external=True)
+            email_sent = send_password_reset_email(user, reset_link)
+
+            if email_sent:
+                flash("Enviamos as instruções de recuperação para o e-mail informado.", "success")
+                reset_link = None
+            else:
+                flash("Link de recuperação gerado. Configure SMTP para envio automático por e-mail.", "warning")
+        else:
+            flash("Se o e-mail estiver cadastrado, enviaremos as instruções de recuperação.", "info")
+
+    return render_template("admin/forgot_password.html", reset_link=reset_link)
+
+
+@admin_bp.route("/redefinir-senha/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    if current_user.is_authenticated:
+        if is_master_user():
+            return redirect(url_for("admin.master_dashboard"))
+        return redirect(url_for("admin.dashboard"))
+
+    token_hash = hash_reset_token(token)
+    reset_token = PasswordResetToken.query.filter_by(token_hash=token_hash).first()
+
+    if not reset_token or not reset_token.is_valid:
+        flash("Link de recuperação inválido ou expirado.", "danger")
+        return redirect(url_for("admin.forgot_password"))
+
+    if request.method == "POST":
+        password = request.form.get("password") or ""
+        password_confirm = request.form.get("password_confirm") or ""
+
+        if password != password_confirm:
+            flash("As senhas não conferem.", "danger")
+            return render_template("admin/reset_password.html")
+
+        if not password_is_strong(password):
+            flash("A senha deve ter pelo menos 8 caracteres, contendo letras e números.", "danger")
+            return render_template("admin/reset_password.html")
+
+        reset_token.user.set_password(password)
+        reset_token.used_at = datetime.utcnow()
+        db.session.commit()
+
+        flash("Senha redefinida com sucesso. Acesse o painel com a nova senha.", "success")
+        return redirect(url_for("admin.login"))
+
+    return render_template("admin/reset_password.html")
 
 
 @admin_bp.route("/logout", methods=["POST"])

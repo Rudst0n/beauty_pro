@@ -432,3 +432,52 @@ textarea.form-control { min-height: 120px; }
   .table-dark-custom td,
   .table-dark-custom th { padding: .85rem .65rem; }
 }
+
+/* Recuperação de senha */
+.login-help {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.login-help a {
+  color: #dfe3ee;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.login-help a:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+.reset-link-box {
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid rgba(255, 255, 255, .10);
+  color: #dfe3ee;
+}
+
+.reset-link-box strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #ffffff;
+}
+
+.reset-link-box p {
+  margin: 0 0 10px;
+  color: #aeb4c5;
+}
+
+.reset-link-box textarea {
+  width: 100%;
+  min-height: 94px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 12px;
+  padding: 10px;
+  color: #ffffff;
+  background: rgba(0, 0, 0, .22);
+  resize: vertical;
+}
+
