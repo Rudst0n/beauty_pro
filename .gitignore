@@ -9,3 +9,4 @@ app/static/uploads/
 htmlcov/
 .vscode/
 "@ | Set-Content .gitignore
+backups/
