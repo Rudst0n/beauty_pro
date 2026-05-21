@@ -1,7 +1,9 @@
 {% macro image_box(path, alt) %}
   {% if path %}
-    <img class="card-image" src="{{ url_for('static', filename=path) }}" alt="{{ alt }}">
+    <img class="card-image" src="{{ url_for('static', filename=path) }}" alt="{{ alt }}" loading="lazy">
   {% else %}
-    <div class="card-image placeholder-image"><span>{{ alt }}</span></div>
+    <div class="card-image placeholder-image">
+      <span>{{ alt }}</span>
+    </div>
   {% endif %}
 {% endmacro %}

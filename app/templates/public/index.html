@@ -4,11 +4,16 @@
 {% block content %}
 <header class="site-header">
   <nav class="container nav-wrap">
-    <a class="brand" href="#topo">{{ company.name }}</a>
+    <a class="brand" href="#topo" aria-label="Voltar ao início">
+      <span class="brand-mark">{{ company.name[:1] }}</span>
+      <span>{{ company.name }}</span>
+    </a>
+
     <div class="nav-links">
       <a href="#servicos">Serviços</a>
       <a href="#produtos">Produtos</a>
       <a href="#galeria">Galeria</a>
+      <a href="#contato">Contato</a>
       <a href="{{ url_for('public.track_whatsapp', company_slug=company.slug) }}" class="nav-cta">Agendar</a>
     </div>
   </nav>
@@ -18,20 +23,60 @@
   <section class="hero-section">
     <div class="container hero-grid">
       <div>
-        <p class="eyebrow">Beleza, cuidado e autoestima</p>
-        <h1>{{ company.headline or 'Realce sua beleza com atendimento personalizado' }}</h1>
-        <p class="hero-text">{{ company.description or 'Produtos, serviços e atendimento direto pelo WhatsApp.' }}</p>
+        <p class="eyebrow">Beleza, cuidado e atendimento direto</p>
+        <h1>{{ company.headline or 'Realce sua beleza com atendimento profissional' }}</h1>
+        <p class="hero-text">
+          {{ company.description or 'Conheça serviços, produtos selecionados e fale pelo WhatsApp para comprar, agendar ou tirar dúvidas.' }}
+        </p>
+
         <div class="hero-actions">
           <a href="{{ url_for('public.track_whatsapp', company_slug=company.slug) }}" class="btn-main">Agendar pelo WhatsApp</a>
           <a href="#produtos" class="btn-outline-custom">Ver produtos</a>
         </div>
+
+        <div class="stats-strip" aria-label="Destaques do atendimento">
+          <div class="stat-pill">
+            <strong>{{ services|length }}</strong>
+            <span>serviços disponíveis</span>
+          </div>
+          <div class="stat-pill">
+            <strong>{{ products|length }}</strong>
+            <span>produtos no catálogo</span>
+          </div>
+          <div class="stat-pill">
+            <strong>{{ gallery_images|length }}</strong>
+            <span>fotos na galeria</span>
+          </div>
+        </div>
       </div>
+
       <div class="hero-card">
         <div class="hero-photo-placeholder">
           <span>{{ company.name }}</span>
-          <small>Catálogo profissional</small>
+          <small>Catálogo profissional com atendimento pelo WhatsApp</small>
+        </div>
+        <div class="hero-badge">
+          <strong>Compra e agendamento sem complicação</strong>
+          <small>A cliente escolhe o serviço ou produto e chama direto no WhatsApp.</small>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section class="trust-section">
+    <div class="container trust-grid">
+      <article class="trust-card">
+        <strong>Atendimento rápido</strong>
+        <p>Botões diretos para WhatsApp com mensagens prontas para agilizar o contato.</p>
+      </article>
+      <article class="trust-card">
+        <strong>Vitrine profissional</strong>
+        <p>Produtos, serviços e fotos organizados em uma página clara e bonita.</p>
+      </article>
+      <article class="trust-card">
+        <strong>Controle pelo painel</strong>
+        <p>O salão pode atualizar produtos, preços, serviços e imagens sempre que precisar.</p>
+      </article>
     </div>
   </section>
 
@@ -40,14 +85,16 @@
       <div class="section-title">
         <p>Atendimento</p>
         <h2>Serviços mais procurados</h2>
+        <div class="lead">Escolha o serviço desejado e fale pelo WhatsApp para verificar horários, valores e disponibilidade.</div>
       </div>
+
       <div class="card-grid">
         {% for service in services %}
           <article class="service-card">
             {{ image_box(service.image, service.name) }}
             <div class="card-body-custom">
               <h3>{{ service.name }}</h3>
-              <p>{{ service.description or 'Serviço personalizado para cuidar da sua beleza.' }}</p>
+              <p>{{ service.description or 'Serviço personalizado para cuidar da sua beleza com atenção aos detalhes.' }}</p>
               <div class="meta-row">
                 <span>{% if service.price_from %}A partir de {{ service.price_from|money }}{% else %}Sob consulta{% endif %}</span>
                 {% if service.duration %}<small>{{ service.duration }}</small>{% endif %}
@@ -56,7 +103,7 @@
             </div>
           </article>
         {% else %}
-          <p>Nenhum serviço cadastrado ainda.</p>
+          <div class="empty-state">Nenhum serviço cadastrado ainda.</div>
         {% endfor %}
       </div>
     </div>
@@ -67,7 +114,9 @@
       <div class="section-title">
         <p>Catálogo</p>
         <h2>Produtos disponíveis</h2>
+        <div class="lead">Produtos selecionados para cuidados com cabelo, beleza e rotina de manutenção em casa.</div>
       </div>
+
       <div class="card-grid">
         {% for product in products %}
           <article class="product-card">
@@ -80,8 +129,34 @@
             </div>
           </article>
         {% else %}
-          <p>Nenhum produto cadastrado ainda.</p>
+          <div class="empty-state">Nenhum produto cadastrado ainda.</div>
         {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="feature-band">
+    <div class="container">
+      <div class="feature-card">
+        <div>
+          <p class="mini-kicker">Como funciona</p>
+          <h2>Escolha, clique e fale direto no WhatsApp</h2>
+          <p>O processo é simples para a cliente e fácil de gerenciar pelo salão. Tudo foi pensado para reduzir dúvidas e aumentar contatos qualificados.</p>
+        </div>
+        <div class="steps-list">
+          <div class="step-item">
+            <span class="step-number">1</span>
+            <div><strong>A cliente vê o catálogo</strong><span>Produtos, serviços e fotos ficam organizados na página.</span></div>
+          </div>
+          <div class="step-item">
+            <span class="step-number">2</span>
+            <div><strong>Clica no que deseja</strong><span>O botão abre o WhatsApp com uma mensagem pronta.</span></div>
+          </div>
+          <div class="step-item">
+            <span class="step-number">3</span>
+            <div><strong>O salão atende e finaliza</strong><span>A compra ou agendamento continua direto pelo WhatsApp.</span></div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -91,7 +166,9 @@
       <div class="section-title">
         <p>Resultados</p>
         <h2>Galeria de trabalhos</h2>
+        <div class="lead">Fotos ajudam a transmitir confiança e mostrar a qualidade dos resultados.</div>
       </div>
+
       <div class="gallery-grid">
         {% for item in gallery_images %}
           <article class="gallery-card">
@@ -103,7 +180,7 @@
             </div>
           </article>
         {% else %}
-          <p>Nenhuma foto cadastrada ainda.</p>
+          <div class="empty-state">Nenhuma foto cadastrada ainda.</div>
         {% endfor %}
       </div>
     </div>
